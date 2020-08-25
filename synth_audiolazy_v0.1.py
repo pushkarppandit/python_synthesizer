@@ -51,16 +51,18 @@ class oscillator:
         elif type == 'saw':
             cycle_samples = ceil(s / f)
             one_wave = line(cycle_samples, 0, 1, finish=True)
-            self.sig = level + amp * Stream(*list(one_wave))
+            self.sig = level + amp * cycle(one_wave)
         elif type == 'reverse_saw':
             cycle_samples = ceil(s / f)
             one_wave = line(cycle_samples, 1, 0, finish=True)
-            self.sig = level + amp * Stream(*list(one_wave))
+            self.sig = level + amp * cycle(one_wave)
         elif type == 'triangle':
-            half_cycle_samples = ceil(s / (2 * f))
-            one_wave = line(half_cycle_samples, 0, 1, finish=True).append(line(half_cycle_samples, 1, 0, finish=True))
-            self.sig = level + amp * Stream(*list(one_wave))
-
+            int_filt = z / (z - 1)
+            if isinstance(f,int):
+                scale_factor = f/s
+            elif isinstance(f,Stream):
+                scale_factor = (1 / s) * (int_filt(f)/int_filt(ones()))
+            self.sig = level + scale_factor * amp * int_filt(floor(sinusoid(f * Hz)) + ceil(sinusoid(f * Hz)))
 
 class track:
     def __init__(self):
@@ -172,45 +174,76 @@ test_op_filt = filt(test_op)
 
 
 # -----------drum test---------------------#
-
+#---------hihat----------#
 hihat_test1 = white_noise()
 # hihat_test = oscillator(type='square',f=15000).sig + white_noise()
-hihat_test_filter_f = line(0.02 * s, 9000, 11000).append(11000 * ones())
-# hihat_test_filter_f = 5000
-hihat_test_filter = resonator(hihat_test_filter_f * Hz, 5000 * Hz)
-# hihat_test_filter = lowpass(hihat_test_filter_f * Hz)
-hihat_sound_op = (hihat_test_filter(hihat_test1.copy())) * fadeout(0.12 * s)
+# hihat_test_filter_f = line(0.02 * s, 11000, 11000).append(11000 * ones())
+hihat_test_filter_f = 16000
+# hihat_test_filter = resonator(hihat_test_filter_f * Hz, 5000 * Hz)
+hihat_test_filter = highpass(hihat_test_filter_f * Hz)
+closed_hihat_vol_env = line(0.1 * s, 1,0.2).append(line(0.1 * s, 0.2,0))
+open_hihat_vol_env = line(0.2 * s, 1,0.4).append(line(0.2 * s, 0.4,0))
+# hihat_sound_op = hihat_test1.copy() * fadeout(0.1 * s)
+hihat_closed_sound_op = (hihat_test_filter(0.2*hihat_test1.copy())) * closed_hihat_vol_env.copy()
+hihat_open_sound_op = (hihat_test_filter(0.2*hihat_test1.copy())) * open_hihat_vol_env.copy()
 # hihat_sound_op = Streamix()
 # hihat_sound_op.add(0,fadein(0.04 * s))
 # hihat_sound_op.add(0,hihat_test2.peek(0.1*s))
 # hihat_sound_op.add(0.12*s,fadeout(0.04 * s))
 
+#--------bass drum------------#
 bass_test1 = oscillator('sin',110).sig.copy()
-bass_test2 = oscillator('saw',110).sig.copy()
-bass_test3 = oscillator('sin',55).sig.copy()
+# bass_test2 = oscillator('saw',110).sig.copy()
+bass_test2 = white_noise()
+bass_test_3_f = line(0.02 * s, 200, 55 ).append(55 * ones())
+bass_test3 = oscillator('sin',bass_test_3_f).sig.copy()
 
-bass_test_filter_f = line(0.01 * s, 500 * Hz, 50 * Hz).append(50 * Hz * ones())
+# bass_test_filter_f = line(0.01 * s, 500 * Hz, 50 * Hz).append(50 * Hz * ones())
 # bass_test_filter = resonator(bass_test_filter_f , 100 * Hz)
-bass_test_filter = lowpass(bass_test_filter_f)
+bass_test_filter = lowpass(bass_test_3_f * Hz)
 bass_sound_op = Streamix()
-bass_sound_op.add(0,0.3*(fadein(0.01 * s).append(ones()))*(bass_test1.copy()) * fadeout(0.1 * s))
-bass_sound_op.add(0,0.1*(fadein(0.01 * s).append(ones()))*(bass_test_filter(bass_test2.copy())) * fadeout(0.1 * s))
-bass_sound_op.add(0,0.5*(bass_test3.copy()) * fadeout(0.15 * s))
-test_beat = beatmaker(240,8)
-# test_beat.create_cycle(hihat_sound_op,1,[0,2,4,5,6,7])
-test_beat.create_cycle(bass_sound_op,1,[0,2,4,6,7])
+bass_sound_op.add(0,0.2*(fadein(0.01 * s).append(ones()))*(bass_test1.copy()) * fadeout(0.25 * s))
+bass_sound_op.add(0,0.1*(fadein(0.01 * s).append(ones()))*(bass_test_filter(bass_test2.copy())) * fadeout(0.12 * s))
+bass_sound_op.add(0,0.5*(bass_test3.copy()) * fadeout (0.3  * s))
+
+#--------snare drum----------#
+snare_test1_f = line(0.05 * s,4000,220).append(220 * ones())
+# snare_test1_f = 220
+snare_test1 =  oscillator('triangle',snare_test1_f).sig.copy()
+
+print(max(list(snare_test1.peek(2*s))))
+snare_test2 =  white_noise()
+snare_test2_filter_f = 10000
+snare_test2_filter = highpass(snare_test2_filter_f * Hz)
+snare_test_2_vol_env = line(0.08 * s, 1,0.3).append(line(0.1 * s, 0.3,0.1)).append(line(0.04 * s, 0.1,0))
+snare_sound_op = Streamix()
+snare_sound_op.add(0,0.3 * (snare_test1.copy()) * fadeout(0.1* s))
+snare_sound_op.add(0,0.3 * snare_test2_filter(snare_test2.copy()) * snare_test_2_vol_env.copy())
+
+
+test_beat = beatmaker(480,16)
+test_beat.create_cycle(hihat_closed_sound_op,0.6,[0,4,6,8,9,12,14])
+test_beat.create_cycle(hihat_open_sound_op,0.6,[2,10])
+test_beat.create_cycle(bass_sound_op,1,[0,4,8,12,15])
+test_beat.create_cycle(snare_sound_op,0.6,[4,12])
 
 
 test_beat_track = test_beat.generate_op_signal('num_cycles',8)
 
 test_final_track = Streamix()
 
-test_final_track.add(0,0.15*test_op_filt.copy())
+test_final_track.add(0,0.12*test_op_filt.copy())
 test_final_track.add(22*s,test_beat_track.copy())
 
+# test = ones(10)
+# test_filt = z/(z-1)
 
+# (z/(z-1)).plot().show()
+# print(list(test.copy()))
+# print(list(test_filt(test).copy()))
 
-# print(test_hihat_cycle.copy())
+# test_osc = oscillator('triangle',440).sig.copy()
+
 # plt.plot(test_hihat_cycle.copy().take(2*s))
 # plt.show()
 print("Done!")
