@@ -1,5 +1,6 @@
 from audiolazy import *
 import matplotlib.pyplot as plt
+import numpy as np
 
 rate = 44100
 s, Hz = sHz(rate)
@@ -36,7 +37,7 @@ class oscillator:
     Generates an oscillation whose range is [-1,1]
     """
 
-    def __init__(self, type, f, amp=1, level=0):
+    def __init__(self, type, f, amp=1.0, level=0.0):
         """
         :param type: can be one of ['sin','square','saw','reverse_saw','triangle']
         :param f: frequency of oscillator in Hertz
@@ -62,7 +63,7 @@ class oscillator:
                 scale_factor = f/s
             elif isinstance(f,Stream):
                 scale_factor = (1 / s) * (int_filt(f)/int_filt(ones()))
-            self.sig = level + scale_factor * amp * int_filt(floor(sinusoid(f * Hz)) + ceil(sinusoid(f * Hz)))
+            self.sig = level - scale_factor/2 + scale_factor * amp * int_filt(floor(sinusoid(f * Hz)) + ceil(sinusoid(f * Hz)))
 
 class track:
     def __init__(self):
@@ -211,7 +212,7 @@ snare_test1_f = line(0.05 * s,4000,220).append(220 * ones())
 # snare_test1_f = 220
 snare_test1 =  oscillator('triangle',snare_test1_f).sig.copy()
 
-print(max(list(snare_test1.peek(2*s))))
+# print(max(list(snare_test1.peek(2*s))))
 snare_test2 =  white_noise()
 snare_test2_filter_f = 10000
 snare_test2_filter = highpass(snare_test2_filter_f * Hz)
@@ -246,6 +247,94 @@ test_final_track.add(22*s,test_beat_track.copy())
 
 # plt.plot(test_hihat_cycle.copy().take(2*s))
 # plt.show()
+
+# ------------- synth patches ----------------------#
+
+# test_synth_A_f_intr = (440 + 20*(fadein(0.01 * s).append(fadeout(0.02 * s))))
+# test_synth_A_f = test_synth_A_f_intr.copy().append(oscillator('square',200,30,440).sig.copy())
+# test_synth_A_f_m = oscillator('sin',10,30,440).sig.copy()
+# test_synth_A_f = oscillator('square',200,30,test_synth_A_f_m).sig.copy()
+
+# test_synth_f_f = (50 + 100*(fadein(0.8 * s).append(fadeout(0.8 * s)).append(zeros())))
+# test_synth_f_f = 220
+test_synth_f_f = oscillator('sin',300,110,220).sig.copy() #
+test_synth_f_a = 30 # good till 50-60
+
+def patch_1_notes(freq):
+    test_synth_f = oscillator('sin', test_synth_f_f.copy(), test_synth_f_a, freq).sig.copy()
+    return oscillator('sin', test_synth_f.copy()).sig.copy()
+
+# test_synth_A_f_m = 440
+# test_synth_A_f = oscillator('sin',test_synth_f_f.copy(),test_synth_f_a,test_synth_A_f_m).sig.copy()
+# test_synth_A = oscillator('sin',test_synth_A_f.copy()).sig.copy()
+#
+# test_synth_C_f_m = 523.25
+# test_synth_C_f = oscillator('sin',test_synth_f_f.copy(),test_synth_f_a,test_synth_C_f_m).sig.copy()
+# test_synth_C = oscillator('sin',test_synth_C_f.copy()).sig.copy()
+#
+# test_synth_E_f_m = 659.26
+# test_synth_E_f = oscillator('sin',test_synth_f_f.copy(),test_synth_f_a,test_synth_E_f_m).sig.copy()
+# test_synth_E = oscillator('sin',test_synth_E_f.copy()).sig.copy()
+
+# test_synth_4_f_m = 554.37
+# test_synth_4_f = oscillator('sin',test_synth_f_f.copy(),test_synth_f_a,test_synth_4_f_m).sig.copy()
+# test_synth_4 = oscillator('sin',test_synth_4_f.copy()).sig.copy()
+
+# notes_init = 'A4,A#4,B4,C5,C#5,D5,D#5,E5,F5,F#5,G5,G#5,A5'.split(',')
+# freqs = np.round(440. * 2**(np.arange(0, len(notes_init)) / 12.),2)
+# notes = dict(zip(notes_init, freqs))
+notes = {'D4':293.66,'D#4':311.13,'E4':329.63,'F4':349.23,'F#4':369.99,'G4':392.00,'G#4':415.30,
+         'A4': 440.0, 'A#4': 466.16, 'B4': 493.88, 'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25,
+         'E5': 659.26, 'F5': 698.46, 'F#5': 739.99, 'G5': 783.99, 'G#5': 830.61, 'A5': 880.0}
+print(notes)
+print(notes['C5'])
+
+test_synth_A4 = patch_1_notes(notes['A4'])
+test_synth_C5 = patch_1_notes(notes['C5'])
+test_synth_E5 = patch_1_notes(notes['E5'])
+
+test_synth_B4 = patch_1_notes(notes['B4'])
+test_synth_D5 = patch_1_notes(notes['D5'])
+test_synth_F5 = patch_1_notes(notes['F5'])
+
+test_synth_D4 = patch_1_notes(notes['D4'])
+test_synth_F4 = patch_1_notes(notes['F4'])
+
+# test_synth_C_f = test_synth_A_f_intr.copy().append(440*ones())
+# test_synth_C = oscillator('sin',test_synth_C_f).sig.copy()
+# test_synth_env = fadein(0.05 * s).append(ones(2 * s)).append(fadeout(1 * s))
+# test_synth_env = fadein(0.01 * s).append(ones(0.1*s)).append(line(0.5 * s,1,0.4)).append(0.4*fadeout(2 * s))
+test_synth_env = fadein(0.01 * s).append(ones(0.1*s)).append(line(0.2*s,1,0.6)).append(0.6*fadeout(3*s)*oscillator('sin',1.5,0.1,1).sig.copy())
+# test_synth_filter_f = 600 + 100*(fadein(0.05 * s).append(line(0.5 * s,1,0.3)).append(0.3*fadeout(1 * s)).append(zeros()))
+# test_synth_filter_f =400
+# test_synth_filter_bw = 50
+# test_synth_filter = resonator(test_synth_filter_f,test_synth_filter_bw)
+test_synth_op = Streamix()
+test_synth_op.add(0*s,0.2*test_synth_env.copy()*test_synth_D4.copy())
+test_synth_op.add(0.08*s,0.2*test_synth_env.copy()*test_synth_F4.copy())
+test_synth_op.add(0.12*s,0.2*test_synth_env.copy()*test_synth_A4.copy())
+test_synth_op.add(0.15*s,0.2*test_synth_env.copy()*test_synth_C5.copy())
+
+test_synth_op.add(3*s,0.2*test_synth_env.copy()*test_synth_B4.copy())
+test_synth_op.add(0.07*s,0.2*test_synth_env.copy()*test_synth_D5.copy())
+test_synth_op.add(0.13*s,0.2*test_synth_env.copy()*test_synth_F5.copy())
+
+test_synth_op.add(3*s,0.2*test_synth_env.copy()*test_synth_A4.copy())
+test_synth_op.add(0.09*s,0.2*test_synth_env.copy()*test_synth_C5.copy())
+test_synth_op.add(0.12*s,0.2*test_synth_env.copy()*test_synth_E5.copy())
+
+
+
+
+# test_synth_op = Streamix()
+# test_synth_op.add(0,0.2*test_synth_A.copy())
+# test_synth_op.add(0.09*s,0.2*test_synth_C.copy())
+# test_synth_op.add(0.13*s,0.2*test_synth_E.copy())
+
+# test_synth_op = test_synth_filter(test_synth_C.copy()).peek(4*s)
+# test_synth_op = test_synth_C.copy().peek(4*s)
+
+# print(max(list(test_synth_op.copy())))
 print("Done!")
 with AudioIO(True) as player:
-    player.play(test_final_track, rate=rate)
+    player.play(test_synth_op, rate=rate)
