@@ -497,7 +497,7 @@ organ_like = partial(string_attempt_1,hrm=[1,2,3],hrm_a=2,
 
 organ_like_2 = partial(string_attempt_1,hrm=[-2,-1,1,2,3],hrm_a=2,
                      env_at_1=0.7,env_at_1_l=0.4,env_at_2=0.6,
-                     env_d_1=0.5,env_d_1_l=0.3,env_d_2=0.8,
+                     env_d_1=0.8,env_d_1_l=0.3,env_d_2=1,
                      voices=1,voices_l=0.3,voices_det=2,voices_rng=rng)
 
 organ_sound_op = Streamix()
