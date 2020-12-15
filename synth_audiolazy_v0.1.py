@@ -217,8 +217,8 @@ def hihat_1(hp_f,env_t1,env_l1,env_t2,env_l2,env_t3):
 # hihat_closed_sound_1 = hihat_1(16000,0.1,0.2,0.01,0.2,0.1)
 # hihat_open_sound_1 = hihat_1(16000,0.2,0.4,0.01,0.4,0.2)
 
-hihat_closed_sound_1 = hihat_1(16000,0.01,0.9,0.05,0.2,0.01)
-hihat_open_sound_1 = hihat_1(15000,0.02,0.6,0.13,0.5,0.01)
+hihat_closed_sound_2 = hihat_1(16000,0.01,0.9,0.05,0.2,0.01)
+hihat_open_sound_2 = hihat_1(15000,0.02,0.6,0.13,0.5,0.01)
 
 
 
@@ -265,19 +265,54 @@ bass_drum_sound_2 = bass_drum_1(27.5,400,55,0.01,
 
 
 #--------snare drum----------#
-snare_test1_f = line(0.01 * s,4000,220).append(220 * ones())
-# snare_test1_f = 220
-snare_test1 =  oscillator('triangle',snare_test1_f).sig.copy()
+# snare_test1_f = line(0.01 * s,4000,220).append(220 * ones())
+# # snare_test1_f = 220
+# snare_test1 =  oscillator('triangle',snare_test1_f).sig.copy()
+#
+# # print(max(list(snare_test1.peek(2*s))))
+# snare_test2 =  white_noise()
+# snare_test2_filter_f = 10000
+# snare_test2_filter = highpass(snare_test2_filter_f * Hz)
+# snare_test_2_vol_env = line(0.03 * s, 1,0.9).append(line(0.08 * s, 0.9,0.4)).append(line(0.03 * s, 0.4,0))
+# snare_sound_op = Streamix()
+# snare_sound_op.add(0,0.3 * (snare_test1.copy()) * fadeout(0.02* s))
+# snare_sound_op.add(0,0.3 * snare_test2_filter(snare_test2.copy()) * snare_test_2_vol_env.copy())
 
-# print(max(list(snare_test1.peek(2*s))))
-snare_test2 =  white_noise()
-snare_test2_filter_f = 10000
-snare_test2_filter = highpass(snare_test2_filter_f * Hz)
-snare_test_2_vol_env = line(0.03 * s, 1,0.9).append(line(0.08 * s, 0.9,0.4)).append(line(0.03 * s, 0.4,0))
-snare_sound_op = Streamix()
-snare_sound_op.add(0,0.3 * (snare_test1.copy()) * fadeout(0.02* s))
-snare_sound_op.add(0,0.3 * snare_test2_filter(snare_test2.copy()) * snare_test_2_vol_env.copy())
 
+def snare_1(tr_f_t,tr_f_h,tr_f_l,tr_d,
+            wn_hp_f,
+            wn_env_1_t,wn_env_1_l,
+            wn_env_2_t,wn_env_2_l,
+            wn_env_3_t,wn_env_3_l,
+            tr_mix
+            ):
+    tr_f = line(tr_f_t * s, tr_f_h, tr_f_l).append(tr_f_l * ones())
+    tr = oscillator('triangle', tr_f).sig.copy()
+
+    # print(max(list(snare_test1.peek(2*s))))
+    wn = white_noise()
+    wn_hp = highpass(wn_hp_f * Hz)
+    wn_env = line(wn_env_1_t * s, wn_env_1_l, wn_env_2_l).append(line(wn_env_2_t * s, wn_env_2_l, wn_env_3_l)).append(line(wn_env_3_t * s, wn_env_3_l, 0))
+    snare_ = Streamix()
+    snare_.add(0, 0.3 * tr_mix * (tr.copy()) * fadeout(tr_d * s))
+    snare_.add(0, 0.3 * (1-tr_mix) * wn_hp(wn.copy()) * wn_env.copy())
+    return snare_
+
+snare_sound_1 = snare_1(tr_f_t=0.01,tr_f_h=4000,tr_f_l=220,tr_d=0.02,
+            wn_hp_f=10000,
+            wn_env_1_t=0.03,wn_env_1_l=1,
+            wn_env_2_t=0.08,wn_env_2_l=0.9,
+            wn_env_3_t=0.03,wn_env_3_l=0.4,
+            tr_mix=0.5
+            )
+
+snare_sound_2 = snare_1(tr_f_t=0.01,tr_f_h=8000,tr_f_l=330,tr_d=0.015,
+            wn_hp_f=10000,
+            wn_env_1_t=0.08,wn_env_1_l=0.7,
+            wn_env_2_t=0.02,wn_env_2_l=1,
+            wn_env_3_t=0.05,wn_env_3_l=0.4,
+            tr_mix=0.6
+            )
 # -------- test beat -----------#
 # test_beat = beatmaker(480,16)
 # test_beat.create_cycle(hihat_closed_sound_1,0.6,[0,4,6,8,9,12,14])
@@ -288,31 +323,32 @@ snare_sound_op.add(0,0.3 * snare_test2_filter(snare_test2.copy()) * snare_test_2
 
 test_beat_2 = beatmaker(320,16)
 # test_beat_2.create_cycle(hihat_closed_sound_1,0.6,[0,1,2,4,5,6,7,8,9,10,11,12,13,14])
-test_beat_2.create_cycle(hihat_closed_sound_1,0.4,[0,2,4,6,8,10,12,14])
+test_beat_2.create_cycle(hihat_closed_sound_2,0.4,[0,2,4,6,8,10,12,14])
 # test_beat_2.create_cycle(hihat_open_sound_1,0.6,[3,15])
 test_beat_2.create_cycle(bass_drum_sound_2,1,[0,3,6,10,14])
-test_beat_2.create_cycle(snare_sound_op,0.8,[4,12])
+test_beat_2.create_cycle(snare_sound_1,0.8,[4,12])
 test_beat_2_track = test_beat_2.generate_op_signal('num_cycles',4)
 
 test_beat_3 = beatmaker(320,16)
-test_beat_3.create_cycle(hihat_closed_sound_1,0.4,[0,1,2,4,5,6,7,8,9,10,11,12,13,14])
-test_beat_3.create_cycle(hihat_open_sound_1,0.4,[3,15])
+test_beat_3.create_cycle(hihat_closed_sound_2,0.4,[0,1,2,4,5,6,7,8,9,10,11,12,13,14])
+test_beat_3.create_cycle(hihat_open_sound_2,0.4,[3,15])
 test_beat_3.create_cycle(bass_drum_sound_2,1,[0,3,6,9,10,14])
-test_beat_3.create_cycle(snare_sound_op,0.8,[4,12])
+test_beat_3.create_cycle(snare_sound_1,0.8,[4,12])
 test_beat_3_track = test_beat_3.generate_op_signal('num_cycles',4)
 
 test_beat_4 = beatmaker(320,16)
-test_beat_4.create_cycle(hihat_closed_sound_1,0.4,[0,1,2,4,5,6,7,8,9,10,11,12,13,14])
-test_beat_4.create_cycle(hihat_open_sound_1,0.4,[3,15])
+test_beat_4.create_cycle(hihat_closed_sound_2,0.4,[0,1,2,4,5,6,7,8,9,10,11,12,13,14])
+test_beat_4.create_cycle(hihat_open_sound_2,0.4,[3,15])
 test_beat_4.create_cycle(bass_drum_sound_2,1,[0,3,6,9,10,14])
-test_beat_4.create_cycle(snare_sound_op,0.8,[4,12])
+test_beat_4.create_cycle(snare_sound_1,0.8,[4,12])
 test_beat_4_track = test_beat_4.generate_op_signal('num_cycles',3)
 
 test_beat_4_r = beatmaker(320,16)
-test_beat_4_r.create_cycle(hihat_closed_sound_1,0.4,[0,1,2,4,5,6,7,8,9,10,11,12,13,14])
-test_beat_4_r.create_cycle(hihat_open_sound_1,0.4,[3,15])
+test_beat_4_r.create_cycle(hihat_closed_sound_2,0.4,[0,1,2,4,5,6,7,8,9,10,11,12,13,14])
+test_beat_4_r.create_cycle(hihat_open_sound_2,0.4,[3,15])
 test_beat_4_r.create_cycle(bass_drum_sound_2,1,[0,3,6,9,10,11,13])
-test_beat_4_r.create_cycle(snare_sound_op,0.8,[4,12,14,15])
+test_beat_4_r.create_cycle(snare_sound_1,0.8,[4,12])
+test_beat_4_r.create_cycle(snare_sound_2,0.9,[14,15])
 test_beat_4_r_track = test_beat_4_r.generate_op_signal('num_cycles',1)
 
 
@@ -588,7 +624,7 @@ def write_to_file(str_mix,t,path):
     return str_mix_array
 
 # organ_sound_op_array = write_to_file(organ_sound_op,15,'../output/organ_chords.wav')
-test_final_track_2_array = write_to_file(test_final_track_2,100,'../output/lowfi_hh_2.wav')
+test_final_track_2_array = write_to_file(test_final_track_2,100,'../output/lowfi_hh_2_mod.wav')
 print("Done!")
 with AudioIO(True) as player:
     player.play(test_final_track_2_array, rate=rate)
